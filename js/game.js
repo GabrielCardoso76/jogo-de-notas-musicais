@@ -46,10 +46,15 @@ class Game {
 
         // Colors
         this.laneColors = ['#ff0055', '#00f0ff', '#00ff00', '#ffff00'];
+        this.noteNames = ['DO', 'RE', 'MI', 'SOL'];
 
         this.resize();
         this.initInput();
         this.initMenu();
+
+        // Auto-request Mic on load (as requested)
+        // Browser might block this if no interaction, but we try anyway
+        setTimeout(() => this.requestMicPermission(), 1000);
     }
 
     resize() {
@@ -485,6 +490,14 @@ class Game {
 
                 this.roundRect(this.ctx, x + 10, y - 10, this.laneWidth - 20, 20, 5, true, false);
                 this.ctx.shadowBlur = 0; // Reset
+
+                // Draw Note Label
+                this.ctx.fillStyle = '#000';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(this.noteNames[note.lane], x + this.laneWidth / 2, y);
+
                 this.ctx.globalAlpha = 1.0;
             }
         });
@@ -530,6 +543,18 @@ class Game {
         ctx.closePath();
         if (fill) ctx.fill();
         if (stroke) ctx.stroke();
+    }
+
+    requestMicPermission() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                console.log("Mic Permission Granted automatically.");
+                // Immediately stop stream to just check permission
+                stream.getTracks().forEach(track => track.stop());
+            })
+            .catch(err => {
+                console.log("Auto Mic Permission blocked/failed. User needs to click button.");
+            });
     }
 
     testMicrophone() {

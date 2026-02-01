@@ -88,6 +88,9 @@ class SoundManager {
             case 'cavaquinho':
                 this.playCavaquinho(frequency);
                 break;
+            case 'acoustic':
+                this.playAcoustic(frequency);
+                break;
             default:
                 this.playPiano(frequency);
         }
@@ -217,6 +220,26 @@ class SoundManager {
 
         osc.start();
         osc.stop(this.ctx.currentTime + 0.3);
+    }
+
+    playAcoustic(freq) {
+        // Violão: Triangle/Sine blend, mellow decay
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        // Soft pluck
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.6, this.ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.0);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1.0);
     }
 
     playMiss() {

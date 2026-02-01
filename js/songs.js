@@ -1,4 +1,10 @@
 const SONGS = {
+    'tutorial': {
+        name: 'Tutorial (Easy)',
+        bpm: 60,
+        difficulty: 'Easy',
+        notes: []
+    },
     'song1': {
         name: 'Neon Lights',
         bpm: 100,
@@ -40,7 +46,12 @@ function generateNotes(songId) {
         // Random lane or simple pattern
         let lane;
 
-        if (songId === 'song1') {
+        if (songId === 'tutorial') {
+             // Very slow, consistent 1-2-3-4
+             lane = i % 4;
+             notes.push({ time: currentTime, lane: lane, type: 'NORMAL' });
+             currentTime += msPerBeat * 2; // Extra slow spacing
+        } else if (songId === 'song1') {
             // Simple 1-2-3-4 pattern or random
             lane = i % 4;
             let type = 'NORMAL';
@@ -90,6 +101,7 @@ function generateNotes(songId) {
     song.duration = currentTime + 3000; // End slightly after last note
 }
 
+generateNotes('tutorial');
 generateNotes('song1');
 generateNotes('song2');
 generateNotes('song3');
