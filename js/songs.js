@@ -1,7 +1,7 @@
 const SONGS = {
     'tutorial': {
         name: 'Tutorial (Easy)',
-        bpm: 60,
+        bpm: 40,
         difficulty: 'Easy',
         notes: []
     },
@@ -47,10 +47,10 @@ function generateNotes(songId) {
         let lane;
 
         if (songId === 'tutorial') {
-             // Very slow, consistent 1-2-3-4
+             // Even slower, single lane per bar
              lane = i % 4;
              notes.push({ time: currentTime, lane: lane, type: 'NORMAL' });
-             currentTime += msPerBeat * 2; // Extra slow spacing
+             currentTime += msPerBeat * 4; // Massive gap (4 seconds at 60bpm, 6s at 40bpm)
         } else if (songId === 'song1') {
             // Simple 1-2-3-4 pattern or random
             lane = i % 4;

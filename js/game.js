@@ -15,6 +15,7 @@ class Game {
         this.feverBarEl = document.getElementById('fever-bar');
         this.feverContainerEl = document.getElementById('fever-container');
         this.menuHighScoreEl = document.getElementById('menu-highscore');
+        this.detectedNoteEl = document.getElementById('detected-note');
 
         window.addEventListener('resize', () => this.resize());
 
@@ -52,9 +53,13 @@ class Game {
         this.initInput();
         this.initMenu();
 
-        // Auto-request Mic on load (as requested)
-        // Browser might block this if no interaction, but we try anyway
-        setTimeout(() => this.requestMicPermission(), 1000);
+        this.micContext = null;
+        this.micAnalyser = null;
+        this.micBuffer = null;
+        this.micSource = null;
+
+        // Auto-request Mic on load
+        setTimeout(() => this.initMicrophone(), 1000);
     }
 
     resize() {
@@ -545,72 +550,157 @@ class Game {
         if (stroke) ctx.stroke();
     }
 
-    requestMicPermission() {
+    initMicrophone() {
+        if (this.micContext) return; // Already init
+
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
-                console.log("Mic Permission Granted automatically.");
-                // Immediately stop stream to just check permission
-                stream.getTracks().forEach(track => track.stop());
+                console.log("Mic Permission Granted.");
+
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.micContext = new AudioContext();
+                this.micAnalyser = this.micContext.createAnalyser();
+                this.micAnalyser.fftSize = 2048;
+                this.micBuffer = new Float32Array(this.micAnalyser.fftSize);
+
+                this.micSource = this.micContext.createMediaStreamSource(stream);
+                this.micSource.connect(this.micAnalyser);
+
+                // Start Pitch Detection Loop
+                this.updatePitch();
             })
             .catch(err => {
-                console.log("Auto Mic Permission blocked/failed. User needs to click button.");
+                console.log("Mic Permission blocked/failed. User needs to enable it.");
             });
     }
 
+    updatePitch() {
+        if (!this.micAnalyser) return;
+
+        this.micAnalyser.getFloatTimeDomainData(this.micBuffer);
+        const ac = this.autoCorrelate(this.micBuffer, this.micContext.sampleRate);
+
+        if (ac > -1) {
+            const note = this.noteFromPitch(ac);
+            const noteName = this.noteNames[note % 4]; // Simplified to 4 lanes for now, or use full scale
+            // Actually, let's map realistic notes to names
+            const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const noteNum = 12 * (Math.log(ac / 440) / Math.log(2)) + 69;
+            const noteIndex = Math.round(noteNum) % 12;
+            const fullNoteName = noteStrings[noteIndex];
+
+            // Map to Do Re Mi for user friendliness if requested, but let's stick to simple first
+            // User asked for "Nota que esta esse som"
+            // Let's translate: C=Do, D=Re, E=Mi, F=Fa, G=Sol, A=La, B=Si
+            const solfege = {
+                "C": "DO", "C#": "DO#",
+                "D": "RE", "D#": "RE#",
+                "E": "MI",
+                "F": "FA", "F#": "FA#",
+                "G": "SOL", "G#": "SOL#",
+                "A": "LA", "A#": "LA#",
+                "B": "SI"
+            };
+
+            this.detectedNoteEl.textContent = solfege[fullNoteName] || fullNoteName;
+            this.detectedNoteEl.style.color = '#00f0ff';
+        } else {
+             // Fade out or keep last?
+             // this.detectedNoteEl.textContent = "...";
+        }
+
+        requestAnimationFrame(() => this.updatePitch());
+    }
+
+    autoCorrelate(buf, sampleRate) {
+        // Implements the ACF2+ algorithm
+        let SIZE = buf.length;
+        let rms = 0;
+
+        for (let i = 0; i < SIZE; i++) {
+            const val = buf[i];
+            rms += val * val;
+        }
+        rms = Math.sqrt(rms / SIZE);
+        if (rms < 0.01) // not enough signal
+            return -1;
+
+        let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+        for (let i = 0; i < SIZE / 2; i++)
+            if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+        for (let i = 1; i < SIZE / 2; i++)
+            if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+
+        buf = buf.slice(r1, r2);
+        SIZE = buf.length;
+
+        const c = new Array(SIZE).fill(0);
+        for (let i = 0; i < SIZE; i++)
+            for (let j = 0; j < SIZE - i; j++)
+                c[i] = c[i] + buf[j] * buf[j + i];
+
+        let d = 0; while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < SIZE; i++) {
+            if (c[i] > maxval) {
+                maxval = c[i];
+                maxpos = i;
+            }
+        }
+        let T0 = maxpos;
+
+        const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+        const a = (x1 + x3 - 2 * x2) / 2;
+        const b = (x3 - x1) / 2;
+        if (a) T0 = T0 - b / (2 * a);
+
+        return sampleRate / T0;
+    }
+
+    noteFromPitch(frequency) {
+        const noteNum = 12 * (Math.log(frequency / 440) / Math.log(2)) + 69;
+        return Math.round(noteNum);
+    }
+
+    // Kept for backward compatibility if needed, but replaced by initMicrophone logic
+    requestMicPermission() {
+         this.initMicrophone();
+    }
+
     testMicrophone() {
+        // Reuse the persistent analyzer if available, or just use the visualizer logic
         const visualizer = document.getElementById('mic-visualizer');
         const bar = document.getElementById('mic-bar');
         const btn = document.getElementById('btn-mic-test');
 
         visualizer.classList.remove('hidden');
-        btn.textContent = "Escutando...";
-        btn.disabled = true;
+        btn.textContent = "Testando...";
 
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const analyser = audioContext.createAnalyser();
-                const microphone = audioContext.createMediaStreamSource(stream);
-                const javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+        // If we already have mic context running
+        if (this.micAnalyser) {
+            const updateVis = () => {
+                if (visualizer.classList.contains('hidden')) return;
+                const array = new Uint8Array(this.micAnalyser.frequencyBinCount);
+                this.micAnalyser.getByteFrequencyData(array);
+                let values = 0;
+                for(let i=0; i<array.length; i++) values += array[i];
+                const avg = values / array.length;
+                bar.style.width = Math.min(100, avg * 2) + '%';
+                requestAnimationFrame(updateVis);
+            };
+            updateVis();
 
-                analyser.smoothingTimeConstant = 0.8;
-                analyser.fftSize = 1024;
+            setTimeout(() => {
+                visualizer.classList.add('hidden');
+                btn.textContent = "Testar Microfone";
+            }, 5000);
+            return;
+        }
 
-                microphone.connect(analyser);
-                analyser.connect(javascriptNode);
-                javascriptNode.connect(audioContext.destination);
-
-                javascriptNode.onaudioprocess = () => {
-                    const array = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteFrequencyData(array);
-                    let values = 0;
-                    const length = array.length;
-                    for (let i = 0; i < length; i++) {
-                        values += array[i];
-                    }
-                    const average = values / length;
-                    bar.style.width = Math.min(100, average * 2) + '%';
-                };
-
-                // Stop after 5 seconds to not hold mic
-                setTimeout(() => {
-                    stream.getTracks().forEach(track => track.stop());
-                    javascriptNode.disconnect();
-                    analyser.disconnect();
-                    microphone.disconnect();
-                    audioContext.close();
-
-                    visualizer.classList.add('hidden');
-                    btn.textContent = "Testar Microfone";
-                    btn.disabled = false;
-                }, 5000);
-            })
-            .catch(err => {
-                console.error('Mic Error:', err);
-                alert('Erro ao acessar microfone: ' + err.message);
-                btn.textContent = "Erro (Tentar Novamente)";
-                btn.disabled = false;
-            });
+        // Fallback if initMicrophone failed or wasn't called
+        this.initMicrophone();
+        // Give it a second to start then try testing again?
+        // Or just let the user know to check permission.
     }
 
     endGame() {
