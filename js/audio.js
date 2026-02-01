@@ -77,12 +77,16 @@ class SoundManager {
                 this.playGuitar(frequency);
                 break;
             case 'drums':
-                // For drums, frequency might map to different drum parts
-                // But for a rhythm game falling notes, we might want melodic tones
-                // OR specific drum sounds based on the lane.
-                // Let's stick to melodic tones for gameplay feedback,
-                // or specific sounds if type is 'miss'.
                 this.playSynth(frequency, 'square');
+                break;
+            case 'violin':
+                this.playViolin(frequency);
+                break;
+            case 'flute':
+                this.playFlute(frequency);
+                break;
+            case 'cavaquinho':
+                this.playCavaquinho(frequency);
                 break;
             default:
                 this.playPiano(frequency);
@@ -149,6 +153,70 @@ class SoundManager {
 
         osc.start();
         osc.stop(this.ctx.currentTime + 0.4);
+    }
+
+    playViolin(freq) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        // Slower attack for bowing effect
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1.2);
+    }
+
+    playFlute(freq) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        // Tremolo/Vibrato could be added with another oscillator, but let's keep it simple
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.05);
+        gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.2); // Sustain bit
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.6);
+    }
+
+    playCavaquinho(freq) {
+        // Higher pitch, fast decay
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq * 2, this.ctx.currentTime); // Octave up
+
+        // Sharp pluck
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3000, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
     }
 
     playMiss() {

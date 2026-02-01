@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rhythm Game</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mic.css">
 </head>
 <body>
 
@@ -22,6 +23,9 @@
                     <button class="btn active" data-value="piano">Piano</button>
                     <button class="btn" data-value="guitar">Guitarra</button>
                     <button class="btn" data-value="drums">Bateria</button>
+                    <button class="btn" data-value="violin">Violino</button>
+                    <button class="btn" data-value="flute">Flauta</button>
+                    <button class="btn" data-value="cavaquinho">Cavaquinho</button>
                 </div>
             </div>
 
@@ -30,10 +34,19 @@
                 <div class="btn-group" id="song-select">
                     <button class="btn active" data-value="song1">Neon Lights</button>
                     <button class="btn" data-value="song2">Cyber Chase</button>
+                    <button class="btn" data-value="song3">Samba Beat</button>
+                    <button class="btn" data-value="song4">Baile Funk</button>
                 </div>
             </div>
 
             <button id="btn-start" class="btn-primary">JOGAR</button>
+
+            <div id="mic-test-container">
+                <button id="btn-mic-test" class="btn-secondary">Testar Microfone</button>
+                <div id="mic-visualizer" class="hidden">
+                    <div id="mic-bar"></div>
+                </div>
+            </div>
         </div>
 
         <!-- HUD (Heads Up Display) -->

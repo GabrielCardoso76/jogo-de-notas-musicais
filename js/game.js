@@ -16,7 +16,6 @@ class Game {
         this.feverContainerEl = document.getElementById('fever-container');
         this.menuHighScoreEl = document.getElementById('menu-highscore');
 
-        this.resize();
         window.addEventListener('resize', () => this.resize());
 
         // Game State
@@ -48,6 +47,7 @@ class Game {
         // Colors
         this.laneColors = ['#ff0055', '#00f0ff', '#00ff00', '#ffff00'];
 
+        this.resize();
         this.initInput();
         this.initMenu();
     }
@@ -81,6 +81,11 @@ class Game {
         // Start Button
         document.getElementById('btn-start').addEventListener('click', () => {
             this.start(this.selectedSong, this.selectedInstrument);
+        });
+
+        // Mic Test
+        document.getElementById('btn-mic-test').addEventListener('click', () => {
+            this.testMicrophone();
         });
 
         this.updateMenuHighScore();
@@ -525,6 +530,62 @@ class Game {
         ctx.closePath();
         if (fill) ctx.fill();
         if (stroke) ctx.stroke();
+    }
+
+    testMicrophone() {
+        const visualizer = document.getElementById('mic-visualizer');
+        const bar = document.getElementById('mic-bar');
+        const btn = document.getElementById('btn-mic-test');
+
+        visualizer.classList.remove('hidden');
+        btn.textContent = "Escutando...";
+        btn.disabled = true;
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                const javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.fftSize = 1024;
+
+                microphone.connect(analyser);
+                analyser.connect(javascriptNode);
+                javascriptNode.connect(audioContext.destination);
+
+                javascriptNode.onaudioprocess = () => {
+                    const array = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(array);
+                    let values = 0;
+                    const length = array.length;
+                    for (let i = 0; i < length; i++) {
+                        values += array[i];
+                    }
+                    const average = values / length;
+                    bar.style.width = Math.min(100, average * 2) + '%';
+                };
+
+                // Stop after 5 seconds to not hold mic
+                setTimeout(() => {
+                    stream.getTracks().forEach(track => track.stop());
+                    javascriptNode.disconnect();
+                    analyser.disconnect();
+                    microphone.disconnect();
+                    audioContext.close();
+
+                    visualizer.classList.add('hidden');
+                    btn.textContent = "Testar Microfone";
+                    btn.disabled = false;
+                }, 5000);
+            })
+            .catch(err => {
+                console.error('Mic Error:', err);
+                alert('Erro ao acessar microfone: ' + err.message);
+                btn.textContent = "Erro (Tentar Novamente)";
+                btn.disabled = false;
+            });
     }
 
     endGame() {

@@ -10,6 +10,18 @@ const SONGS = {
         bpm: 140,
         difficulty: 'Hard',
         notes: []
+    },
+    'song3': {
+        name: 'Samba Beat',
+        bpm: 130,
+        difficulty: 'Hard',
+        notes: []
+    },
+    'song4': {
+        name: 'Baile Funk',
+        bpm: 130,
+        difficulty: 'Medium',
+        notes: []
     }
 };
 
@@ -36,7 +48,7 @@ function generateNotes(songId) {
 
             notes.push({ time: currentTime, lane: lane, type: type });
             currentTime += msPerBeat;
-        } else {
+        } else if (songId === 'song2') {
             // Faster, maybe double notes
             lane = Math.floor(Math.random() * 4);
             let type = 'NORMAL';
@@ -49,6 +61,28 @@ function generateNotes(songId) {
                 notes.push({ time: currentTime, lane: (lane + 2) % 4, type: 'NORMAL' });
             }
             currentTime += msPerBeat / 2; // Twice as fast spawning
+        } else if (songId === 'song3') {
+            // Samba: Syncopated feel (skip beat occasionally)
+            if (i % 4 !== 3) { // Skip every 4th 16th-note-ish beat for syncopation
+                 lane = Math.floor(Math.random() * 4);
+                 notes.push({ time: currentTime, lane: lane, type: 'NORMAL' });
+            }
+            // Burst
+            if (i % 8 === 0) {
+                 notes.push({ time: currentTime + msPerBeat/2, lane: Math.floor(Math.random()*4), type: 'GOLD' });
+            }
+            currentTime += msPerBeat;
+        } else {
+            // Funk: Heavy downbeat
+            lane = Math.floor(Math.random() * 4);
+            notes.push({ time: currentTime, lane: lane, type: 'NORMAL' });
+
+            // Tamborzão beat mimic: Boom-Cha-Cha-Boom-Cha
+            // Just randomized dense pattern
+             if (i % 2 === 0) {
+                 notes.push({ time: currentTime + msPerBeat/2, lane: (lane + 1) % 4, type: 'NORMAL' });
+             }
+            currentTime += msPerBeat;
         }
     }
 
@@ -58,3 +92,5 @@ function generateNotes(songId) {
 
 generateNotes('song1');
 generateNotes('song2');
+generateNotes('song3');
+generateNotes('song4');
