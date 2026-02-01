@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rhythm Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Menu Principal -->
+        <div id="menu-overlay" class="overlay">
+            <h1>Rhythm Beat</h1>
+            <p class="highscore-display">Recorde: <span id="menu-highscore">0</span></p>
+
+            <div class="selector-group">
+                <h3>Instrumento</h3>
+                <div class="btn-group" id="instrument-select">
+                    <button class="btn active" data-value="piano">Piano</button>
+                    <button class="btn" data-value="guitar">Guitarra</button>
+                    <button class="btn" data-value="drums">Bateria</button>
+                </div>
+            </div>
+
+            <div class="selector-group">
+                <h3>Música</h3>
+                <div class="btn-group" id="song-select">
+                    <button class="btn active" data-value="song1">Neon Lights</button>
+                    <button class="btn" data-value="song2">Cyber Chase</button>
+                </div>
+            </div>
+
+            <button id="btn-start" class="btn-primary">JOGAR</button>
+        </div>
+
+        <!-- HUD (Heads Up Display) -->
+        <div id="hud-overlay" class="hidden">
+            <div class="top-hud">
+                <div id="score">Score: 0</div>
+                <div id="combo">Combo: 0</div>
+            </div>
+
+            <div id="health-container">
+                <div id="health-bar"></div>
+            </div>
+
+            <div id="fever-container">
+                 <div id="fever-bar"></div>
+                 <div id="fever-text">FEVER!</div>
+            </div>
+
+            <button id="btn-menu" class="btn-small">Menu</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-overlay" class="overlay hidden">
+            <h2>Fim de Jogo</h2>
+            <p>Score Final: <span id="final-score">0</span></p>
+            <p>Max Combo: <span id="max-combo">0</span></p>
+            <button id="btn-restart" class="btn-primary">Jogar Novamente</button>
+            <button id="btn-return-menu" class="btn-secondary">Menu Principal</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/songs.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
