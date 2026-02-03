@@ -91,6 +91,12 @@ class SoundManager {
             case 'acoustic':
                 this.playAcoustic(frequency);
                 break;
+            case 'saxophone':
+                this.playSaxophone(frequency);
+                break;
+            case '8bit':
+                this.play8Bit(frequency);
+                break;
             default:
                 this.playPiano(frequency);
         }
@@ -112,6 +118,64 @@ class SoundManager {
 
         osc.start();
         osc.stop(this.ctx.currentTime + 1.0);
+    }
+
+    playSaxophone(freq) {
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'square';
+
+        osc1.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        // Vibrato
+        const vibrato = this.ctx.createOscillator();
+        vibrato.frequency.value = 5; // 5Hz vibrato
+        const vibratoGain = this.ctx.createGain();
+        vibratoGain.gain.value = 10;
+        vibrato.connect(vibratoGain);
+        vibratoGain.connect(osc1.frequency);
+        vibratoGain.connect(osc2.frequency);
+        vibrato.start();
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.1); // Breath
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc1.start();
+        osc2.start();
+
+        const stopTime = this.ctx.currentTime + 0.8;
+        osc1.stop(stopTime);
+        osc2.stop(stopTime);
+        vibrato.stop(stopTime);
+    }
+
+    play8Bit(freq) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        // Quick envelope
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.01);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime + 0.1);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
     }
 
     playGuitar(freq) {

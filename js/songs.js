@@ -28,6 +28,18 @@ const SONGS = {
         bpm: 130,
         difficulty: 'Medium',
         notes: []
+    },
+    'odetojoy': {
+        name: 'Ode to Joy',
+        bpm: 110,
+        difficulty: 'Medium',
+        notes: []
+    },
+    'furelise': {
+        name: 'Fur Elise',
+        bpm: 120,
+        difficulty: 'Hard',
+        notes: []
     }
 };
 
@@ -94,6 +106,26 @@ function generateNotes(songId) {
                  notes.push({ time: currentTime + msPerBeat/2, lane: (lane + 1) % 4, type: 'NORMAL' });
              }
             currentTime += msPerBeat;
+        } else if (songId === 'odetojoy') {
+            // Ode to Joy Melody: E E F G G F E D
+            // Mapping: Do=0(C), Re=1(D), Mi=2(E), Fa=3(F) ?
+            // Scale is typically C D E F G A B
+            // Lane 0: C, Lane 1: D, Lane 2: E, Lane 3: F/G?
+            // Our noteNames are DO RE MI SOL.
+            // Let's just map melody to lanes broadly.
+            const pattern = [2, 2, 3, 0, 0, 3, 2, 1, 0, 0, 1, 2, 2, 1, 1]; // Abstract representation
+            const lane = pattern[i % pattern.length];
+            notes.push({ time: currentTime, lane: lane, type: 'NORMAL' });
+            currentTime += msPerBeat;
+        } else if (songId === 'furelise') {
+            // Fur Elise: E D# E D# E B D C A
+            // Fast 3/8 time usually, but here linear
+            const pattern = [2, 3, 2, 3, 2, 1, 3, 0, 1];
+            const lane = pattern[i % pattern.length];
+            let type = 'NORMAL';
+            if (i % 10 === 0) type = 'GOLD';
+            notes.push({ time: currentTime, lane: lane, type: type });
+            currentTime += msPerBeat * 0.75; // Faster feel
         }
     }
 
@@ -106,3 +138,5 @@ generateNotes('song1');
 generateNotes('song2');
 generateNotes('song3');
 generateNotes('song4');
+generateNotes('odetojoy');
+generateNotes('furelise');
